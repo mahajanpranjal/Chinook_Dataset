@@ -1,0 +1,174 @@
+{
+	"name": "CustomerStage_to_DIM",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Snowflake_ds",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerStage"
+				},
+				{
+					"dataset": {
+						"referenceName": "Snowflake_ds",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerDIM"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Snowflake_ds",
+						"type": "DatasetReference"
+					},
+					"name": "sinkCustomer"
+				}
+			],
+			"transformations": [
+				{
+					"name": "joinSourceTgt"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "RowChanges"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerId as decimal(38,0),",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Company as string,",
+				"          Address as string,",
+				"          City as string,",
+				"          State as string,",
+				"          Country as string,",
+				"          PostalCode as string,",
+				"          Phone as string,",
+				"          Fax as string,",
+				"          Email as string,",
+				"          SupportRepId as decimal(38,0),",
+				"          Created_By as string,",
+				"          Created_Dt as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table') ~> CustomerStage",
+				"source(output(",
+				"          CUSTOMER_KEY as decimal(10,0),",
+				"          CUSTOMER_ID as decimal(10,0),",
+				"          FIRST_NAME as string,",
+				"          LAST_NAME as string,",
+				"          COMPANY_NAME as string,",
+				"          CITY as string,",
+				"          STATE as string,",
+				"          COUNTRY as string,",
+				"          ZIP_CODE as string,",
+				"          EMPLOYEE_ID as decimal(10,0),",
+				"          IS_ACTIVE as string,",
+				"          SOURCE_ID as string,",
+				"          HASH_VALUE as string,",
+				"          DATE_TO_WAREHOUSE as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table') ~> CustomerDIM",
+				"CustomerStage, CustomerDIM join(CustomerId == CUSTOMER_ID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinSourceTgt",
+				"joinSourceTgt select(mapColumn(",
+				"          CustomerId,",
+				"          FirstName,",
+				"          LastName,",
+				"          Company,",
+				"          Address,",
+				"          City = CustomerStage@City,",
+				"          State = CustomerStage@State,",
+				"          Country = CustomerStage@Country,",
+				"          PostalCode,",
+				"          Phone,",
+				"          Fax,",
+				"          Email,",
+				"          SupportRepId,",
+				"          Created_By,",
+				"          Created_Dt,",
+				"          CUSTOMER_ID,",
+				"          FIRST_NAME,",
+				"          LAST_NAME,",
+				"          COMPANY_NAME,",
+				"          CITY = CustomerDIM@CITY,",
+				"          STATE = CustomerDIM@STATE,",
+				"          COUNTRY = CustomerDIM@COUNTRY,",
+				"          ZIP_CODE,",
+				"          EMPLOYEE_ID,",
+				"          IS_ACTIVE,",
+				"          SOURCE_ID,",
+				"          HASH_VALUE,",
+				"          DATE_TO_WAREHOUSE",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 keyGenerate(output(customerkry as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 derive(CREATED_BY = \"Pranjal\",",
+				"          source_hash_value = sha2(256, concat(",
+				"    coalesce(FirstName,''), '|',",
+				"    coalesce(LastName,''), '|',",
+				"    coalesce(Company,''), '|',",
+				"    coalesce(select1@City,''), '|',",
+				"    coalesce(select1@State,''), '|',",
+				"    coalesce(select1@Country,''), '|',",
+				"    coalesce(PostalCode,''), '|',",
+				"    coalesce(toString(SupportRepId),'')",
+				")),",
+				"          is_Active = \"Y\",",
+				"          CREATED_DT = currentDate()) ~> derivedColumn1",
+				"derivedColumn1 alterRow(insertIf(iifNull(CustomerId,0,CUSTOMER_ID)==0),",
+				"     updateIf(CustomerId==CUSTOMER_ID),",
+				"     updateIf(source_hash_value!=HASH_VALUE)) ~> RowChanges",
+				"RowChanges sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:true,",
+				"     insertable:true,",
+				"     updateable:true,",
+				"     upsertable:true,",
+				"     keys:['CUSTOMER_KEY'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     stageInsert: true,",
+				"     mapColumn(",
+				"          CUSTOMER_ID = CustomerId,",
+				"          FIRST_NAME = FirstName,",
+				"          LAST_NAME = LastName,",
+				"          COMPANY_NAME = Company,",
+				"          CITY = select1@City,",
+				"          STATE = select1@State,",
+				"          COUNTRY = select1@Country,",
+				"          ZIP_CODE = PostalCode,",
+				"          EMPLOYEE_ID = SupportRepId,",
+				"          DATE_TO_WAREHOUSE = Created_Dt,",
+				"          HASH_VALUE = source_hash_value,",
+				"          CUSTOMER_KEY = customerkry,",
+				"          SOURCE_ID = derivedColumn1@CREATED_BY,",
+				"          IS_ACTIVE = derivedColumn1@is_Active",
+				"     )) ~> sinkCustomer"
+			]
+		}
+	}
+}

@@ -1,0 +1,42 @@
+{
+	"name": "is_sqldb_pra",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"servername": {
+				"type": "string",
+				"defaultValue": "fallsemester2025dadabi.database.windows.net"
+			},
+			"databasename": {
+				"type": "string",
+				"defaultValue": "fall2025"
+			},
+			"username": {
+				"type": "string",
+				"defaultValue": "fall2025_admin"
+			},
+			"secret_name_key": {
+				"type": "string",
+				"defaultValue": "002375449@Neu"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "fallsemester2025dadabi.database.windows.net",
+			"database": "fall2025",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "fall2025_admin",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "AzureKeyVault1",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "sqlserver-db-credentials"
+			}
+		}
+	}
+}

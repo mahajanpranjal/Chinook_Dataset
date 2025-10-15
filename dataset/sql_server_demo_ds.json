@@ -1,0 +1,39 @@
+{
+	"name": "sql_server_demo_ds",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "is_sqldb_pra",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"servername": "fallsemester2025dadabi.database.windows.net",
+				"databasename": "fall2025",
+				"username": "fall2025_admin",
+				"secret_name_key": "002375449@Neu"
+			}
+		},
+		"parameters": {
+			"schema_name": {
+				"type": "string",
+				"defaultValue": "chinook"
+			},
+			"table_name": {
+				"type": "string",
+				"defaultValue": "Customer"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().schema_name",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().table_name",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

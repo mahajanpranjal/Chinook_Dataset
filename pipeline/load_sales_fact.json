@@ -1,0 +1,66 @@
+{
+	"name": "load_sales_fact",
+	"properties": {
+		"activities": [
+			{
+				"name": "load_sales_fact",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 60,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SnowflakeV2Source",
+						"query": "WITH aggsales AS (\n    SELECT \n        cd.CUSTOMER_KEY,\n        i.\"InvoiceId\" AS INVOICE_ID,\n        i.\"InvoiceDate\" AS SALE_DATE,\n        SUM(il.\"Quantity\" * il.\"UnitPrice\") AS TOTAL_SALE_AMT\n    FROM STAGE.INVOICE i\n    JOIN STAGE.INVOICELINE il ON i.\"InvoiceId\" = il.\"InvoiceId\"\n    JOIN DW.CUSTOMER_DIM cd ON cd.CUSTOMER_ID = i.\"CustomerId\"\n    GROUP BY \n        i.\"InvoiceId\",\n        cd.CUSTOMER_KEY,\n        i.\"InvoiceDate\"\n)\nSELECT \n    ROW_NUMBER() OVER (ORDER BY INVOICE_ID) AS SALES_KEY,\n    CUSTOMER_KEY,\n    INVOICE_ID,\n    -- SALE_DATE,\n    dd.DATE_KEY AS DATE_DIM_KEY,\n    -- td.TIME_KEY AS TIME_DIM_KEY,\n    TOTAL_SALE_AMT,\n    123 AS SOURCE_ID,\n    CURRENT_TIMESTAMP() AS DATE_TO_WAREHOUSE\nFROM aggsales a\nJOIN DW.DATE_DIM dd ON dd.FULL_DATE = DATE(a.SALE_DATE)\n-- JOIN DW.TIME_DIM td ON td.TIME_24_HR = TO_CHAR(a.SALE_DATE, 'HH24:MI')\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM DW.SALES_FACT sf\n    WHERE sf.INVOICE_ID = a.INVOICE_ID\n)",
+						"exportSettings": {
+							"type": "SnowflakeExportCopyCommand"
+						}
+					},
+					"sink": {
+						"type": "SnowflakeV2Sink",
+						"importSettings": {
+							"type": "SnowflakeImportCopyCommand"
+						}
+					},
+					"enableStaging": true,
+					"stagingSettings": {
+						"linkedServiceName": {
+							"referenceName": "is_storage_sas_auth",
+							"type": "LinkedServiceReference"
+						},
+						"path": "stagedata/chinook"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "Snowflake_ds",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema_name": "STAGE",
+							"table_name": "INVOICE"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "Snowflake_ds",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema_name": "DW",
+							"table_name": "SALES_FACT"
+						}
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-10-15T01:29:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,12 @@
+{
+	"name": "is_azure_blob_storage",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "https://stgdemodamg7370pra.blob.core.windows.net/",
+			"accountKind": "StorageV2"
+		}
+	}
+}
