@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adfdemodamgpra"
+		},
+		"AzureKeyVault1_properties_typeProperties_baseUrl": {
+			"value": "https://pra-demoadf.vault.azure.net/"
+		},
+		"is_azure_blob_storage_properties_typeProperties_serviceEndpoint": {
+			"value": "https://stgdemodamg7370pra.blob.core.windows.net/"
+		},
+		"is_sqldb_pra_properties_typeProperties_server": {
+			"value": "fallsemester2025dadabi.database.windows.net"
+		},
+		"is_sqldb_pra_properties_typeProperties_database": {
+			"value": "fall2025"
+		},
+		"is_sqldb_pra_properties_typeProperties_userName": {
+			"value": "fall2025_admin"
+		},
+		"is_storage_sas_auth_sasUri": {
+			"value": ""
+		},
+		"is_storage_sas_auth_properties_typeProperties_sasToken_secretName": {
+			"value": "sastoken"
+		},
+		"snowflake_chinook_properties_typeProperties_database": {
+			"value": "CHINOOK_DB"
+		},
+		"snowflake_chinook_properties_typeProperties_role": {
+			"value": "CHINOOK_ROLE"
+		},
+		"snowflake_chinook_properties_typeProperties_host": {
+			"value": "OXUVOYU-AA36505.snowflakecomputing.com"
+		}
+	}
+}

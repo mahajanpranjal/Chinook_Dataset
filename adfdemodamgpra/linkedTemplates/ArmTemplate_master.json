@@ -1,0 +1,112 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adfdemodamgpra"
+		},
+		"AzureKeyVault1_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://pra-demoadf.vault.azure.net/"
+		},
+		"is_azure_blob_storage_properties_typeProperties_serviceEndpoint": {
+			"type": "string",
+			"defaultValue": "https://stgdemodamg7370pra.blob.core.windows.net/"
+		},
+		"is_sqldb_pra_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "fallsemester2025dadabi.database.windows.net"
+		},
+		"is_sqldb_pra_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "fall2025"
+		},
+		"is_sqldb_pra_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "fall2025_admin"
+		},
+		"is_storage_sas_auth_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'is_storage_sas_auth'"
+		},
+		"is_storage_sas_auth_properties_typeProperties_sasToken_secretName": {
+			"type": "string",
+			"defaultValue": "sastoken"
+		},
+		"snowflake_chinook_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "CHINOOK_DB"
+		},
+		"snowflake_chinook_properties_typeProperties_role": {
+			"type": "string",
+			"defaultValue": "CHINOOK_ROLE"
+		},
+		"snowflake_chinook_properties_typeProperties_host": {
+			"type": "string",
+			"defaultValue": "OXUVOYU-AA36505.snowflakecomputing.com"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "adfdemodamgpra_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AzureKeyVault1_properties_typeProperties_baseUrl": {
+						"value": "[parameters('AzureKeyVault1_properties_typeProperties_baseUrl')]"
+					},
+					"is_azure_blob_storage_properties_typeProperties_serviceEndpoint": {
+						"value": "[parameters('is_azure_blob_storage_properties_typeProperties_serviceEndpoint')]"
+					},
+					"is_sqldb_pra_properties_typeProperties_server": {
+						"value": "[parameters('is_sqldb_pra_properties_typeProperties_server')]"
+					},
+					"is_sqldb_pra_properties_typeProperties_database": {
+						"value": "[parameters('is_sqldb_pra_properties_typeProperties_database')]"
+					},
+					"is_sqldb_pra_properties_typeProperties_userName": {
+						"value": "[parameters('is_sqldb_pra_properties_typeProperties_userName')]"
+					},
+					"is_storage_sas_auth_sasUri": {
+						"value": "[parameters('is_storage_sas_auth_sasUri')]"
+					},
+					"is_storage_sas_auth_properties_typeProperties_sasToken_secretName": {
+						"value": "[parameters('is_storage_sas_auth_properties_typeProperties_sasToken_secretName')]"
+					},
+					"snowflake_chinook_properties_typeProperties_database": {
+						"value": "[parameters('snowflake_chinook_properties_typeProperties_database')]"
+					},
+					"snowflake_chinook_properties_typeProperties_role": {
+						"value": "[parameters('snowflake_chinook_properties_typeProperties_role')]"
+					},
+					"snowflake_chinook_properties_typeProperties_host": {
+						"value": "[parameters('snowflake_chinook_properties_typeProperties_host')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

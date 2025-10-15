@@ -1,0 +1,1039 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adfdemodamgpra"
+		},
+		"AzureKeyVault1_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://pra-demoadf.vault.azure.net/"
+		},
+		"is_azure_blob_storage_properties_typeProperties_serviceEndpoint": {
+			"type": "string",
+			"defaultValue": "https://stgdemodamg7370pra.blob.core.windows.net/"
+		},
+		"is_sqldb_pra_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "fallsemester2025dadabi.database.windows.net"
+		},
+		"is_sqldb_pra_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "fall2025"
+		},
+		"is_sqldb_pra_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "fall2025_admin"
+		},
+		"is_storage_sas_auth_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'is_storage_sas_auth'"
+		},
+		"is_storage_sas_auth_properties_typeProperties_sasToken_secretName": {
+			"type": "string",
+			"defaultValue": "sastoken"
+		},
+		"snowflake_chinook_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "CHINOOK_DB"
+		},
+		"snowflake_chinook_properties_typeProperties_role": {
+			"type": "string",
+			"defaultValue": "CHINOOK_ROLE"
+		},
+		"snowflake_chinook_properties_typeProperties_host": {
+			"type": "string",
+			"defaultValue": "OXUVOYU-AA36505.snowflakecomputing.com"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureKeyVault1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('AzureKeyVault1_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/is_azure_blob_storage')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"serviceEndpoint": "[parameters('is_azure_blob_storage_properties_typeProperties_serviceEndpoint')]",
+					"accountKind": "StorageV2"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Parquet_ds')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "is_azure_blob_storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container_name": {
+						"type": "string"
+					},
+					"folder_name": {
+						"type": "string"
+					},
+					"file_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().file_name",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder_name",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().container_name",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/is_azure_blob_storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/is_sqldb_pra')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"servername": {
+						"type": "string",
+						"defaultValue": "fallsemester2025dadabi.database.windows.net"
+					},
+					"databasename": {
+						"type": "string",
+						"defaultValue": "fall2025"
+					},
+					"username": {
+						"type": "string",
+						"defaultValue": "fall2025_admin"
+					},
+					"secret_name_key": {
+						"type": "string",
+						"defaultValue": "002375449@Neu"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('is_sqldb_pra_properties_typeProperties_server')]",
+					"database": "[parameters('is_sqldb_pra_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('is_sqldb_pra_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "sqlserver-db-credentials"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/is_storage_sas_auth')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": "[parameters('is_storage_sas_auth_sasUri')]",
+					"sasToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('is_storage_sas_auth_properties_typeProperties_sasToken_secretName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/snowflake_chinook')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"AccountName": {
+						"type": "string",
+						"defaultValue": "OXUVOYU-AA36505"
+					},
+					"Database": {
+						"type": "string",
+						"defaultValue": "CHINOOK_DB"
+					},
+					"Warehouse": {
+						"type": "string",
+						"defaultValue": "COMPUTE_WH"
+					},
+					"UserName": {
+						"type": "string",
+						"defaultValue": "CHINOOK_USER"
+					},
+					"Role": {
+						"type": "string",
+						"defaultValue": "CHINOOK_ROLE"
+					},
+					"Host": {
+						"type": "string",
+						"defaultValue": "OXUVOYU-AA36505.snowflakecomputing.com"
+					}
+				},
+				"annotations": [],
+				"type": "SnowflakeV2",
+				"typeProperties": {
+					"authenticationType": "Basic",
+					"accountIdentifier": "OXUVOYU-AA36505",
+					"user": "CHINOOK_USER",
+					"database": "[parameters('snowflake_chinook_properties_typeProperties_database')]",
+					"warehouse": "CHINOOK_WH",
+					"role": "[parameters('snowflake_chinook_properties_typeProperties_role')]",
+					"host": "[parameters('snowflake_chinook_properties_typeProperties_host')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "snowflakechinookcredential"
+					}
+				},
+				"version": "1.1"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Snowflake_ds')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "snowflake_chinook",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schema_name": {
+						"type": "string"
+					},
+					"table_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "SnowflakeV2Table",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema_name",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().table_name",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/snowflake_chinook')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_server_demo_ds')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "is_sqldb_pra",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"servername": "fallsemester2025dadabi.database.windows.net",
+						"databasename": "fall2025",
+						"username": "fall2025_admin",
+						"secret_name_key": "002375449@Neu"
+					}
+				},
+				"parameters": {
+					"schema_name": {
+						"type": "string",
+						"defaultValue": "chinook"
+					},
+					"table_name": {
+						"type": "string",
+						"defaultValue": "Customer"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema_name",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().table_name",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/is_sqldb_pra')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/extract_SQLDB_PL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.table_name_array",
+								"type": "Expression"
+							},
+							"batchCount": 2,
+							"activities": [
+								{
+									"name": "sqltable_2_parquet",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.00:10:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 60,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"validateDataConsistency": true,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "sql_server_demo_ds",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema_name": "chinook",
+												"table_name": {
+													"value": "@item()",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Parquet_ds",
+											"type": "DatasetReference",
+											"parameters": {
+												"container_name": "stagedata",
+												"folder_name": "chinook",
+												"file_name": {
+													"value": "@concat(\n    item(),\n    '.parquet'\n)",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"table_name_array": {
+						"type": "array",
+						"defaultValue": [
+							"Customer",
+							"Artist",
+							"Album",
+							"Invoice",
+							"InvoiceLine",
+							"Genre"
+						]
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-10-14T20:59:13Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_server_demo_ds')]",
+				"[concat(variables('factoryId'), '/datasets/Parquet_ds')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/load_sales_fact')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "load_sales_fact",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.00:10:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SnowflakeV2Source",
+								"query": "WITH aggsales AS (\n    SELECT \n        cd.CUSTOMER_KEY,\n        i.\"InvoiceId\" AS INVOICE_ID,\n        i.\"InvoiceDate\" AS SALE_DATE,\n        SUM(il.\"Quantity\" * il.\"UnitPrice\") AS TOTAL_SALE_AMT\n    FROM STAGE.INVOICE i\n    JOIN STAGE.INVOICELINE il ON i.\"InvoiceId\" = il.\"InvoiceId\"\n    JOIN DW.CUSTOMER_DIM cd ON cd.CUSTOMER_ID = i.\"CustomerId\"\n    GROUP BY \n        i.\"InvoiceId\",\n        cd.CUSTOMER_KEY,\n        i.\"InvoiceDate\"\n)\nSELECT \n    ROW_NUMBER() OVER (ORDER BY INVOICE_ID) AS SALES_KEY,\n    CUSTOMER_KEY,\n    INVOICE_ID,\n    -- SALE_DATE,\n    dd.DATE_KEY AS DATE_DIM_KEY,\n    -- td.TIME_KEY AS TIME_DIM_KEY,\n    TOTAL_SALE_AMT,\n    123 AS SOURCE_ID,\n    CURRENT_TIMESTAMP() AS DATE_TO_WAREHOUSE\nFROM aggsales a\nJOIN DW.DATE_DIM dd ON dd.FULL_DATE = DATE(a.SALE_DATE)\n-- JOIN DW.TIME_DIM td ON td.TIME_24_HR = TO_CHAR(a.SALE_DATE, 'HH24:MI')\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM DW.SALES_FACT sf\n    WHERE sf.INVOICE_ID = a.INVOICE_ID\n)",
+								"exportSettings": {
+									"type": "SnowflakeExportCopyCommand"
+								}
+							},
+							"sink": {
+								"type": "SnowflakeV2Sink",
+								"importSettings": {
+									"type": "SnowflakeImportCopyCommand"
+								}
+							},
+							"enableStaging": true,
+							"stagingSettings": {
+								"linkedServiceName": {
+									"referenceName": "is_storage_sas_auth",
+									"type": "LinkedServiceReference"
+								},
+								"path": "stagedata/chinook"
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema_name": "STAGE",
+									"table_name": "INVOICE"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema_name": "DW",
+									"table_name": "SALES_FACT"
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-10-15T01:29:26Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Snowflake_ds')]",
+				"[concat(variables('factoryId'), '/linkedServices/is_storage_sas_auth')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/parquet_2_snowflake_stage')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEachTable",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							},
+							"batchCount": 2,
+							"activities": [
+								{
+									"name": "Parquet_2_snow_stage",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.00:10:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 60,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "ParquetSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "ParquetReadSettings"
+											}
+										},
+										"sink": {
+											"type": "SnowflakeV2Sink",
+											"importSettings": {
+												"type": "SnowflakeImportCopyCommand"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "is_storage_sas_auth",
+												"type": "LinkedServiceReference"
+											},
+											"path": "stagedata/chinook"
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "Parquet_ds",
+											"type": "DatasetReference",
+											"parameters": {
+												"container_name": "stagedata",
+												"folder_name": {
+													"value": "@pipeline().parameters.folder_name",
+													"type": "Expression"
+												},
+												"file_name": {
+													"value": "@concat(\n    item(),\n    '.parquet'\n)",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "Snowflake_ds",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema_name": "STAGE",
+												"table_name": {
+													"value": "@toUpper(item())",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"folder_name": {
+						"type": "string",
+						"defaultValue": "chinook"
+					},
+					"table_name": {
+						"type": "array",
+						"defaultValue": [
+							"Customer",
+							"Artist",
+							"Album",
+							"Invoice",
+							"InvoiceLine",
+							"Genre"
+						]
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-10-14T22:41:14Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Parquet_ds')]",
+				"[concat(variables('factoryId'), '/datasets/Snowflake_ds')]",
+				"[concat(variables('factoryId'), '/linkedServices/is_storage_sas_auth')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ArtistStage_to_DIM')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference"
+							},
+							"name": "ArtistStage"
+						},
+						{
+							"dataset": {
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference"
+							},
+							"name": "ArtistDIM"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "joinSourceTgt"
+						},
+						{
+							"name": "surrogateKey1"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "alterRow1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          ArtistId as decimal(38,0),",
+						"          Name as string,",
+						"          Created_By as string,",
+						"          Created_Dt as date",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'table') ~> ArtistStage",
+						"source(output(",
+						"          ARTIST_KEY as decimal(10,0),",
+						"          ARTIST_ID as decimal(10,0),",
+						"          ARTIST_NAME as string,",
+						"          HASH_VALUE as string,",
+						"          SOURCE_ID as string,",
+						"          DATE_TO_WAREHOUSE as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'table') ~> ArtistDIM",
+						"ArtistStage, ArtistDIM join(ArtistId == ARTIST_ID,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinSourceTgt",
+						"joinSourceTgt keyGenerate(output(artistkey as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> surrogateKey1",
+						"surrogateKey1 derive(source_hash_value = sha2(256, concat(    coalesce(Name,''))),",
+						"          CREATED_BY = \"Pranjal\",",
+						"          CREATED_DT = currentDate()) ~> derivedColumn1",
+						"derivedColumn1 alterRow(insertIf(iifNull(ArtistId,0,ARTIST_ID)==0),",
+						"     updateIf(ArtistId==ARTIST_ID),",
+						"     updateIf(source_hash_value!=HASH_VALUE)) ~> alterRow1",
+						"alterRow1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:true,",
+						"     insertable:true,",
+						"     updateable:true,",
+						"     upsertable:true,",
+						"     keys:['ARTIST_KEY'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     stageInsert: true,",
+						"     mapColumn(",
+						"          ARTIST_ID = ArtistId,",
+						"          ARTIST_NAME = Name,",
+						"          ARTIST_KEY = artistkey,",
+						"          HASH_VALUE = source_hash_value,",
+						"          SOURCE_ID = derivedColumn1@CREATED_BY,",
+						"          DATE_TO_WAREHOUSE = derivedColumn1@CREATED_DT",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Snowflake_ds')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerStage_to_DIM')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerStage"
+						},
+						{
+							"dataset": {
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerDIM"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "Snowflake_ds",
+								"type": "DatasetReference"
+							},
+							"name": "sinkCustomer"
+						}
+					],
+					"transformations": [
+						{
+							"name": "joinSourceTgt"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "surrogateKey1"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "RowChanges"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          CustomerId as decimal(38,0),",
+						"          FirstName as string,",
+						"          LastName as string,",
+						"          Company as string,",
+						"          Address as string,",
+						"          City as string,",
+						"          State as string,",
+						"          Country as string,",
+						"          PostalCode as string,",
+						"          Phone as string,",
+						"          Fax as string,",
+						"          Email as string,",
+						"          SupportRepId as decimal(38,0),",
+						"          Created_By as string,",
+						"          Created_Dt as date",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'table') ~> CustomerStage",
+						"source(output(",
+						"          CUSTOMER_KEY as decimal(10,0),",
+						"          CUSTOMER_ID as decimal(10,0),",
+						"          FIRST_NAME as string,",
+						"          LAST_NAME as string,",
+						"          COMPANY_NAME as string,",
+						"          CITY as string,",
+						"          STATE as string,",
+						"          COUNTRY as string,",
+						"          ZIP_CODE as string,",
+						"          EMPLOYEE_ID as decimal(10,0),",
+						"          IS_ACTIVE as string,",
+						"          SOURCE_ID as string,",
+						"          HASH_VALUE as string,",
+						"          DATE_TO_WAREHOUSE as timestamp",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'table') ~> CustomerDIM",
+						"CustomerStage, CustomerDIM join(CustomerId == CUSTOMER_ID,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinSourceTgt",
+						"joinSourceTgt select(mapColumn(",
+						"          CustomerId,",
+						"          FirstName,",
+						"          LastName,",
+						"          Company,",
+						"          Address,",
+						"          City = CustomerStage@City,",
+						"          State = CustomerStage@State,",
+						"          Country = CustomerStage@Country,",
+						"          PostalCode,",
+						"          Phone,",
+						"          Fax,",
+						"          Email,",
+						"          SupportRepId,",
+						"          Created_By,",
+						"          Created_Dt,",
+						"          CUSTOMER_ID,",
+						"          FIRST_NAME,",
+						"          LAST_NAME,",
+						"          COMPANY_NAME,",
+						"          CITY = CustomerDIM@CITY,",
+						"          STATE = CustomerDIM@STATE,",
+						"          COUNTRY = CustomerDIM@COUNTRY,",
+						"          ZIP_CODE,",
+						"          EMPLOYEE_ID,",
+						"          IS_ACTIVE,",
+						"          SOURCE_ID,",
+						"          HASH_VALUE,",
+						"          DATE_TO_WAREHOUSE",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"select1 keyGenerate(output(customerkry as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> surrogateKey1",
+						"surrogateKey1 derive(CREATED_BY = \"Pranjal\",",
+						"          source_hash_value = sha2(256, concat(",
+						"    coalesce(FirstName,''), '|',",
+						"    coalesce(LastName,''), '|',",
+						"    coalesce(Company,''), '|',",
+						"    coalesce(select1@City,''), '|',",
+						"    coalesce(select1@State,''), '|',",
+						"    coalesce(select1@Country,''), '|',",
+						"    coalesce(PostalCode,''), '|',",
+						"    coalesce(toString(SupportRepId),'')",
+						")),",
+						"          is_Active = \"Y\",",
+						"          CREATED_DT = currentDate()) ~> derivedColumn1",
+						"derivedColumn1 alterRow(insertIf(iifNull(CustomerId,0,CUSTOMER_ID)==0),",
+						"     updateIf(CustomerId==CUSTOMER_ID),",
+						"     updateIf(source_hash_value!=HASH_VALUE)) ~> RowChanges",
+						"RowChanges sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:true,",
+						"     insertable:true,",
+						"     updateable:true,",
+						"     upsertable:true,",
+						"     keys:['CUSTOMER_KEY'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     stageInsert: true,",
+						"     mapColumn(",
+						"          CUSTOMER_ID = CustomerId,",
+						"          FIRST_NAME = FirstName,",
+						"          LAST_NAME = LastName,",
+						"          COMPANY_NAME = Company,",
+						"          CITY = select1@City,",
+						"          STATE = select1@State,",
+						"          COUNTRY = select1@Country,",
+						"          ZIP_CODE = PostalCode,",
+						"          EMPLOYEE_ID = SupportRepId,",
+						"          DATE_TO_WAREHOUSE = Created_Dt,",
+						"          HASH_VALUE = source_hash_value,",
+						"          CUSTOMER_KEY = customerkry,",
+						"          SOURCE_ID = derivedColumn1@CREATED_BY,",
+						"          IS_ACTIVE = derivedColumn1@is_Active",
+						"     )) ~> sinkCustomer"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Snowflake_ds')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/load_Artist_DIM')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "load_Artist_DIM",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.00:10:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "ArtistStage_to_DIM",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"ArtistStage": {
+										"schema_name": "STAGE",
+										"table_name": "ARTIST"
+									},
+									"ArtistDIM": {
+										"schema_name": "DW",
+										"table_name": "ARTIST_DIM"
+									},
+									"sink1": {
+										"schema_name": "DW",
+										"table_name": "ARTIST_DIM"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Coarse"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-10-15T00:17:50Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/ArtistStage_to_DIM')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/load_Customer_DIM')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.00:10:00",
+							"retry": 2,
+							"retryIntervalInSeconds": 60,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "CustomerStage_to_DIM",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"CustomerStage": {
+										"schema_name": "STAGE",
+										"table_name": "CUSTOMER"
+									},
+									"CustomerDIM": {
+										"schema_name": "DW",
+										"table_name": "CUSTOMER_DIM"
+									},
+									"sinkCustomer": {
+										"schema_name": "DW",
+										"table_name": "CUSTOMER_DIM"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Coarse"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-10-15T00:17:49Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/CustomerStage_to_DIM')]"
+			]
+		}
+	]
+}
